@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dor - your place in line</title>
+<meta name="description" content="Dor holds your place in line. Join queues from your phone, watch your position live, and arrive when it's your turn.">
+<style>
+:root{
+  --bg:#08090c; --bg2:#101218; --card:#14171f; --line:#242833; --text:#f3f5f8; --mute:#98a0b2;
+  --a:#2ee6a6; --a2:#22d3ee; --amber:#fbbf24; --red:#ff5d73; --radius:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.5;min-height:100vh;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
+  background:radial-gradient(620px 420px at 85% -5%,rgba(46,230,166,.16),transparent 70%),radial-gradient(520px 420px at -5% 45%,rgba(34,211,238,.08),transparent 70%)}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+.hidden{display:none!important}
+
+/* nav */
+nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);background:rgba(8,9,12,.72);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.02em;font-size:1.2rem;cursor:pointer}
+.logo i{width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,var(--a),var(--a2));display:grid;place-items:center;color:#04130d;font-style:normal;font-weight:900;font-size:.95rem;box-shadow:0 0 22px rgba(46,230,166,.45)}
+.nav-r{display:flex;gap:10px;align-items:center}
+.who{color:var(--mute);font-size:.88rem}
+.btn{border:1px solid var(--line);background:var(--card);padding:10px 18px;border-radius:999px;cursor:pointer;font-weight:600;font-size:.92rem;transition:.2s}
+.btn:hover{border-color:#464c5d;transform:translateY(-1px)}
+.btn.primary{background:linear-gradient(135deg,var(--a),var(--a2));border:0;color:#04130d;box-shadow:0 8px 24px rgba(46,230,166,.28)}
+.btn.primary:hover{box-shadow:0 10px 30px rgba(46,230,166,.45)}
+.btn.sm{padding:7px 14px;font-size:.82rem}
+.btn.danger{color:#ff9aa8;border-color:rgba(255,93,115,.4)}
+.btn.warn{color:var(--amber);border-color:rgba(251,191,36,.4)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* hero */
+.hero{padding:84px 0 56px;display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center}
+.eyebrow{display:inline-flex;gap:8px;align-items:center;font-size:.8rem;color:var(--mute);border:1px solid var(--line);padding:6px 14px;border-radius:999px;background:var(--bg2)}
+.eyebrow b{width:8px;height:8px;border-radius:50%;background:var(--a);box-shadow:0 0 10px var(--a);animation:pulse 1.4s infinite}
+@keyframes pulse{50%{opacity:.35}}
+h1{font-size:clamp(2.6rem,6.5vw,4.9rem);line-height:1;letter-spacing:-.045em;margin:20px 0}
+h1 em{font-style:normal;background:linear-gradient(120deg,var(--a),var(--a2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{color:var(--mute);font-size:1.15rem;max-width:540px}
+.cta{display:flex;gap:12px;margin-top:30px;flex-wrap:wrap}
+
+/* ticket art */
+.tk{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:26px;position:relative;box-shadow:0 30px 80px rgba(0,0,0,.45),0 0 60px rgba(46,230,166,.08);transform:rotate(2deg)}
+.tk::before,.tk::after{content:"";position:absolute;top:58%;width:26px;height:26px;border-radius:50%;background:var(--bg)}
+.tk::before{left:-14px;border-right:1px solid var(--line)}
+.tk::after{right:-14px;border-left:1px solid var(--line)}
+.tk small{color:var(--mute);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase}
+.tk .big{font-size:5.2rem;font-weight:900;letter-spacing:-.06em;line-height:1;background:linear-gradient(135deg,var(--a),var(--a2));-webkit-background-clip:text;background-clip:text;color:transparent;margin:6px 0 4px}
+.tk .row{display:flex;justify-content:space-between;gap:10px;margin-top:24px;padding-top:20px;border-top:2px dashed var(--line)}
+.tk .row b{display:block;font-size:1.5rem;letter-spacing:-.02em}
+.dots{display:flex;gap:6px;margin-top:14px}
+.dots i{flex:1;height:6px;border-radius:9px;background:var(--line)}
+.dots i.on{background:linear-gradient(90deg,var(--a),var(--a2))}
+.dots i.cur{background:var(--a);animation:pulse 1.2s infinite}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:10px 0 70px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px}
+.stat b{display:block;font-size:2.2rem;letter-spacing:-.03em}
+.stat small{color:var(--mute)}
+h2{font-size:clamp(1.7rem,3.5vw,2.4rem);letter-spacing:-.03em;margin-bottom:8px}
+.sub{color:var(--mute);margin-bottom:28px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:70px}
+.step{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px;transition:.25s}
+.step:hover{transform:translateY(-4px);border-color:rgba(46,230,166,.45)}
+.step .n{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:rgba(46,230,166,.13);color:var(--a);font-weight:800;margin-bottom:14px}
+.step p{color:var(--mute);font-size:.95rem;margin-top:6px}
+footer{border-top:1px solid var(--line);padding:30px 0;color:var(--mute);font-size:.88rem;text-align:center}
+
+/* app */
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:18px 0;scrollbar-width:none;align-items:center}
+.tab{white-space:nowrap;padding:9px 18px;border-radius:999px;border:1px solid transparent;background:transparent;cursor:pointer;color:var(--mute);font-weight:600}
+.tab.on{background:var(--card);border-color:var(--line);color:var(--text)}
+.live{margin-left:auto;font-size:.78rem;color:var(--mute);display:flex;gap:6px;align-items:center;white-space:nowrap}
+.live b{width:8px;height:8px;border-radius:50%;background:var(--mute)}
+.live.on b{background:var(--a);box-shadow:0 0 10px var(--a);animation:pulse 1.4s infinite}
+.panel{padding-bottom:60px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+input,select,textarea{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;outline:none;transition:.2s}
+input:focus,select:focus,textarea:focus{border-color:var(--a)}
+.bar input,.bar select{width:auto;min-width:160px}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{border:1px solid var(--line);background:var(--bg2);padding:7px 14px;border-radius:999px;cursor:pointer;font-size:.84rem;color:var(--mute);font-weight:600}
+.pill.on{color:#04130d;background:var(--a);border-color:var(--a)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;position:relative}
+.vc h4{font-size:1.08rem;letter-spacing:-.01em;padding-right:70px}
+.meta{color:var(--mute);font-size:.84rem;margin-top:2px}
+.chip{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.72rem;font-weight:700;border:1px solid var(--line);color:var(--mute)}
+.chip.ok{color:var(--a);border-color:rgba(46,230,166,.4);background:rgba(46,230,166,.08)}
+.chip.warn{color:var(--amber);border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.08)}
+.chip.bad{color:#ff9aa8;border-color:rgba(255,93,115,.45);background:rgba(255,93,115,.08)}
+.vc .st{position:absolute;top:18px;right:18px}
+.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}
+.nums div{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.nums b{display:block;font-size:1.35rem;letter-spacing:-.02em}
+.nums small{color:var(--mute);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em}
+.empty{color:var(--mute);text-align:center;padding:50px 10px;border:1px dashed var(--line);border-radius:var(--radius)}
+.hint{color:var(--mute);font-size:.82rem;margin-top:6px}
+
+/* my ticket */
+.tc{display:grid;grid-template-columns:130px 1fr;gap:20px;align-items:center}
+.tc .no{font-size:3.6rem;font-weight:900;letter-spacing:-.06em;line-height:1;text-align:center;background:linear-gradient(135deg,var(--a),var(--a2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.tc .no small{display:block;font-size:.68rem;letter-spacing:.14em;color:var(--mute);-webkit-text-fill-color:var(--mute);font-weight:600}
+.tc.turn{border-color:var(--a);box-shadow:0 0 0 1px var(--a),0 0 40px rgba(46,230,166,.25);animation:glow 1.6s infinite}
+@keyframes glow{50%{box-shadow:0 0 0 1px var(--a),0 0 10px rgba(46,230,166,.1)}}
+.tc.done{opacity:.6}
+.banner{background:rgba(46,230,166,.12);border:1px solid rgba(46,230,166,.4);color:var(--a);padding:10px 14px;border-radius:12px;font-weight:700;margin-top:10px}
+.prog{height:6px;background:var(--line);border-radius:9px;margin-top:10px;overflow:hidden}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--a),var(--a2));transition:width .5s}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+
+/* staff console */
+.console{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+.counter{text-align:center;padding:30px 20px}
+.counter .no{font-size:6rem;font-weight:900;letter-spacing:-.07em;line-height:1;background:linear-gradient(135deg,var(--a),var(--a2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.counter .no.none{background:none;-webkit-text-fill-color:var(--mute);color:var(--mute);font-size:3rem}
+.counter h4{margin-top:8px;font-size:1.15rem}
+.counter .row-btns{justify-content:center}
+.wl{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:11px 0;border-top:1px solid var(--line);font-size:.92rem}
+.wl:first-of-type{border-top:0}
+.wl .n{font-weight:800;color:var(--a);min-width:44px}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px}
+.summary div{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.summary b{display:block;font-size:1.3rem}
+.summary small{color:var(--mute);font-size:.7rem;text-transform:uppercase;letter-spacing:.05em}
+
+/* forms + modal */
+.form{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form .full{grid-column:1/-1}
+.form label{display:block;font-size:.82rem;color:var(--mute);margin-bottom:5px}
+.modal{position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.66);backdrop-filter:blur(6px);display:grid;place-items:center;padding:16px;overflow-y:auto}
+.box{background:var(--bg2);border:1px solid var(--line);border-radius:22px;padding:28px;width:100%;max-width:500px;position:relative;animation:pop .25s ease;max-height:92vh;overflow-y:auto}
+@keyframes pop{from{transform:translateY(16px) scale(.97);opacity:0}}
+.x{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--card);cursor:pointer}
+.box h3{font-size:1.4rem;margin-bottom:14px;letter-spacing:-.02em}
+.tabs2{display:flex;gap:6px;margin-bottom:18px;background:var(--card);padding:4px;border-radius:999px}
+.tabs2 button{flex:1;border:0;background:transparent;padding:9px;border-radius:999px;cursor:pointer;font-weight:600;color:var(--mute)}
+.tabs2 button.on{background:var(--bg);color:var(--text)}
+.demo{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
+.demo button{border:1px dashed var(--line);background:transparent;border-radius:999px;padding:5px 12px;font-size:.78rem;color:var(--mute);cursor:pointer}
+.demo button:hover{color:var(--text);border-color:var(--a)}
+#toasts{position:fixed;bottom:20px;right:20px;z-index:6000;display:flex;flex-direction:column;gap:8px;max-width:calc(100vw - 40px)}
+.toast{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--a);padding:12px 16px;border-radius:12px;animation:pop .25s;max-width:360px}
+.toast.err{border-left-color:var(--red)}
+.toast.turn{border-left-color:var(--a);background:rgba(46,230,166,.12);font-weight:700}
+.reveal{opacity:0;transform:translateY(22px);transition:.7s}
+.reveal.in{opacity:1;transform:none}
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr;padding-top:46px}.tk{max-width:320px;margin:auto}
+  .stats{grid-template-columns:1fr 1fr}.steps{grid-template-columns:1fr}
+  .console{grid-template-columns:1fr}.form{grid-template-columns:1fr}
+  .tc{grid-template-columns:96px 1fr}.tc .no{font-size:2.6rem}
+  .who{display:none}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <div class="logo" onclick="goHome()"><i>D</i>Dor</div>
+  <div class="nav-r" id="navR"></div>
+</div></nav>
+
+<!-- ========== LANDING ========== -->
+<main id="landing" class="wrap">
+  <section class="hero">
+    <div>
+      <span class="eyebrow"><b></b>Live queues, from your phone</span>
+      <h1>Don't wait in line.<br><em>Wait anywhere.</em></h1>
+      <p class="lead">Dor holds your place. Take a number from your phone, watch your position move in real time, and show up only when it's your turn.</p>
+      <div class="cta">
+        <button class="btn primary" onclick="openApp('venues')">See live queues</button>
+        <button class="btn" onclick="openAuth('register')">Create account</button>
+      </div>
+    </div>
+    <div class="tk" aria-hidden="true">
+      <small>Your ticket</small>
+      <div class="big">17</div>
+      <small>Now serving 14</small>
+      <div class="dots"><i class="on"></i><i class="on"></i><i class="cur"></i><i></i></div>
+      <div class="row"><div><small>People ahead</small><b>2</b></div><div style="text-align:right"><small>Estimated wait</small><b>~9 min</b></div></div>
+    </div>
+  </section>
+
+  <section class="stats reveal" id="stats"></section>
+
+  <section class="reveal">
+    <h2>How it works</h2>
+    <p class="sub">Three steps. No standing around.</p>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><h3>Pick a place</h3><p>See every queue with its live wait: clinics, offices, banks, pharmacies.</p></div>
+      <div class="step"><div class="n">2</div><h3>Get your number</h3><p>One tap from your phone. Your position and wait update live as people are served.</p></div>
+      <div class="step"><div class="n">3</div><h3>Arrive on time</h3><p>You get an alert when you're almost up, and again when you're called.</p></div>
+    </div>
+  </section>
+</main>
+
+<!-- ========== APP ========== -->
+<main id="app" class="wrap hidden">
+  <div class="tabs" id="tabs"></div>
+  <div class="panel" id="panel"></div>
+</main>
+
+<footer>Dor is a portfolio project. All venues and people shown are fictional demo data.</footer>
+
+<div id="modalRoot"></div>
+<div id="toasts"></div>
+
+<script>
+/* ====================== helpers ====================== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const CATS = ['Clinic','Government','Bank','Pharmacy','Salon','Other'];
+
+const S = {
+  token: null, user: null,
+  tab: 'venues',
+  venues: [], tickets: [],
+  cat: '', q: '',
+  staffVenues: [], staffVenueId: null, staffQueue: null
+};
+
+function saveSession(){
+  try{ localStorage.setItem('dor.session', JSON.stringify({token:S.token,user:S.user})); }catch{}
+}
+function loadSession(){
+  try{
+    const raw = localStorage.getItem('dor.session'); if(!raw) return;
+    const s = JSON.parse(raw); S.token = s.token; S.user = s.user;
+  }catch{}
+}
+
+async function api(path, opts = {}){
+  const headers = {'Content-Type':'application/json'};
+  if(S.token) headers.Authorization = 'Bearer ' + S.token;
+  const res = await fetch(path, {...opts, headers});
+  let data = null;
+  try{ data = await res.json(); }catch{}
+  if(res.status === 401 && S.token){ signOut(true); throw new Error('Your session expired. Please sign in again.'); }
+  if(!res.ok){
+    let msg = data?.message || data?.title || 'Something went wrong.';
+    if(data?.errors) msg = Object.values(data.errors).flat().join(' ');
+    throw new Error(msg);
+  }
+  return data;
+}
+const post = (p, body) => api(p, {method:'POST', body: body ? JSON.stringify(body) : undefined});
+
+function toast(msg, kind = ''){
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind; el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(() => el.remove(), kind === 'turn' ? 12000 : 4500);
+}
+
+function beep(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [880, 1175].forEach((f, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.value = f; o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(.0001, ctx.currentTime + i*.18);
+      g.gain.exponentialRampToValueAtTime(.25, ctx.currentTime + i*.18 + .02);
+      g.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime + i*.18 + .16);
+      o.start(ctx.currentTime + i*.18); o.stop(ctx.currentTime + i*.18 + .17);
+    });
+  }catch{}
+}
+
+const isCustomer = () => S.user?.role === 'Customer';
+const isStaff = () => S.user?.role === 'Staff';
+const fmtTime = iso => new Date(iso).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+const waitText = v => v.peopleInQueue === 0 ? 'No wait' : '~' + v.estimatedWaitMinutes + ' min';
+
+/* ====================== navigation ====================== */
+function renderNav(){
+  const r = $('#navR');
+  if(!S.user){
+    r.innerHTML = `<button class="btn sm" onclick="openAuth('login')">Sign in</button>
+                   <button class="btn sm primary" onclick="openAuth('register')">Join</button>`;
+  }else{
+    r.innerHTML = `<span class="who">${esc(S.user.fullName)} <span class="chip">${esc(S.user.role)}</span></span>
+                   <button class="btn sm" onclick="openApp()">Open app</button>
+                   <button class="btn sm" onclick="signOut()">Sign out</button>`;
+  }
+}
+
+function goHome(){ $('#app').classList.add('hidden'); $('#landing').classList.remove('hidden'); window.scrollTo(0,0); loadStats(); }
+
+function openApp(tab){
+  $('#landing').classList.add('hidden'); $('#app').classList.remove('hidden');
+  S.tab = tab || (isStaff() ? 'console' : 'venues');
+  if(isStaff() && !['console','venues'].includes(S.tab)) S.tab = 'console';
+  if(!isStaff() && !['venues','tickets'].includes(S.tab)) S.tab = 'venues';
+  if(S.tab === 'tickets' && !isCustomer()) S.tab = 'venues';
+  renderTabs(); refreshCurrent(true);
+  window.scrollTo(0,0);
+}
+
+function renderTabs(){
+  const tabs = isStaff() ? [['console','Staff console'],['venues','All queues']]
+             : isCustomer() ? [['venues','Queues'],['tickets','My tickets']]
+             : [['venues','Queues']];
+  $('#tabs').innerHTML = tabs.map(([k,l]) =>
+    `<button class="tab ${S.tab===k?'on':''}" onclick="setTab('${k}')">${l}</button>`).join('')
+    + `<span class="live ${liveOn?'on':''}" id="liveTag"><b></b><span>${liveOn?'Live':'Updating every few seconds'}</span></span>`;
+}
+function setTab(t){ S.tab = t; renderTabs(); refreshCurrent(true); }
+
+/* ====================== data loading ====================== */
+let refreshTimer = null;
+function scheduleRefresh(){ clearTimeout(refreshTimer); refreshTimer = setTimeout(() => refreshCurrent(false), 250); }
+
+async function refreshCurrent(showLoading){
+  if($('#app').classList.contains('hidden')) return;
+  try{
+    if(S.tab === 'venues') await loadVenues(showLoading);
+    else if(S.tab === 'tickets') await loadTickets(showLoading);
+    else if(S.tab === 'console') await loadStaff(showLoading);
+  }catch(e){ if(showLoading) $('#panel').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+
+async function loadStats(){
+  try{
+    const s = await api('/api/stats');
+    $('#stats').innerHTML = [
+      [s.venues,'Places with a live queue'],[s.ticketsToday,'Tickets taken today'],
+      [s.servedToday,'People served today'],[s.peopleWaitingNow,'Waiting right now']
+    ].map(([n,l]) => `<div class="stat"><b>${Number(n)}</b><small>${l}</small></div>`).join('');
+  }catch{ $('#stats').innerHTML = ''; }
+}
+
+/* ---------- venues ---------- */
+async function loadVenues(showLoading){
+  if(showLoading) $('#panel').innerHTML = '<div class="empty">Loading queues...</div>';
+  const qs = new URLSearchParams();
+  if(S.cat) qs.set('category', S.cat);
+  if(S.q.trim()) qs.set('search', S.q.trim());
+  S.venues = await api('/api/venues?' + qs);
+  if(isCustomer()) S.tickets = await api('/api/tickets/mine');
+  if(S.tab === 'venues') renderVenues();
+  watch(S.venues.map(v => v.id));
+}
+
+function myActiveTicket(venueId){
+  return S.tickets.find(t => t.venueId === venueId && ['Waiting','Called','Serving'].includes(t.status));
+}
+
+function renderVenues(){
+  const focus = document.activeElement?.id === 'q';
+  const pills = ['', ...CATS].map(c => `<button class="pill ${S.cat===c?'on':''}" onclick="setCat('${c}')">${c||'All'}</button>`).join('');
+  const cards = S.venues.map(v => {
+    const t = myActiveTicket(v.id);
+    let action = '';
+    if(isCustomer()){
+      if(t) action = `<button class="btn sm" onclick="setTab('tickets')">My ticket: #${t.number}</button>`;
+      else if(!v.isOpen) action = `<button class="btn sm" disabled>Closed</button>`;
+      else action = `<button class="btn sm primary" onclick="join(${v.id})">Get a ticket</button>`;
+    }else if(!S.user){
+      action = v.isOpen ? `<button class="btn sm primary" onclick="openAuth('login')">Sign in to join</button>` : `<button class="btn sm" disabled>Closed</button>`;
+    }
+    return `<div class="card vc">
+      <span class="st chip ${v.isOpen?'ok':'bad'}">${v.isOpen?'Open':'Closed'}</span>
+      <h4>${esc(v.name)}</h4>
+      <div class="meta">${esc(v.category)} &middot; ${esc(v.city)}</div>
+      <div class="meta">${esc(v.address)}</div>
+      <div class="nums">
+        <div><small>Now serving</small><b>${v.nowServing ? '#'+v.nowServing : '-'}</b></div>
+        <div><small>In queue</small><b>${v.peopleInQueue}</b></div>
+        <div><small>Wait</small><b>${esc(waitText(v))}</b></div>
+      </div>
+      ${action}
+    </div>`;
+  }).join('');
+  $('#panel').innerHTML = `
+    <div class="bar"><input id="q" placeholder="Search by name or address" value="${esc(S.q)}" oninput="onSearch(this.value)">
+      <div class="pills">${pills}</div></div>
+    ${cards ? `<div class="grid">${cards}</div>` : '<div class="empty">No queues match your search.</div>'}
+    <p class="hint">The wait estimate is learned from how long people actually took at the counter today.</p>`;
+  if(focus){ const el = $('#q'); el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+}
+let searchTimer = null;
+function onSearch(v){ S.q = v; clearTimeout(searchTimer); searchTimer = setTimeout(() => loadVenues(false), 300); }
+function setCat(c){ S.cat = c; loadVenues(false); }
+
+async function join(venueId){
+  if(!S.user){ openAuth('login'); return; }
+  try{
+    const t = await post(`/api/venues/${venueId}/join`);
+    toast(`You're #${t.number} at ${t.venueName}. Sit back, we'll tell you when it's time.`);
+    askNotificationPermission();
+    S.tab = 'tickets'; renderTabs(); await loadTickets(false);
+  }catch(e){ toast(e.message, 'err'); }
+}
+
+/* ---------- my tickets ---------- */
+async function loadTickets(showLoading){
+  if(showLoading) $('#panel').innerHTML = '<div class="empty">Loading your tickets...</div>';
+  S.tickets = await api('/api/tickets/mine');
+  if(S.tab === 'tickets') renderTickets();
+  watch(S.tickets.filter(t => ['Waiting','Called','Serving'].includes(t.status)).map(t => t.venueId));
+  updateTitle();
+}
+
+function ticketCard(t){
+  const active = ['Waiting','Called','Serving'].includes(t.status);
+  const total = Math.max(t.peopleAhead + 1, 1);
+  const pct = t.status === 'Waiting' ? Math.max(8, 100 - (t.peopleAhead / Math.max(total, 6)) * 100) : 100;
+  let info = '';
+  if(t.status === 'Waiting'){
+    info = t.peopleAhead === 0
+      ? `<b>You're next.</b> Stay close.`
+      : `<b>${t.peopleAhead}</b> ${t.peopleAhead===1?'person':'people'} ahead &middot; about <b>${t.estimatedWaitMinutes} min</b>`;
+  }else if(t.status === 'Called'){
+    const deadline = new Date(new Date(t.calledAt).getTime() + t.callGraceMinutes*60000).toISOString();
+    info = `<div class="banner">It's your turn! Go to the counter. <span class="cd" data-deadline="${deadline}"></span></div>`;
+  }else if(t.status === 'Serving') info = `<div class="banner">You're being served now.</div>`;
+  else if(t.status === 'Done') info = 'Served. Thank you!';
+  else if(t.status === 'NoShow') info = 'You missed your turn, so the ticket was released.';
+  else info = 'You cancelled this ticket.';
+
+  const cancel = (t.status === 'Waiting' || t.status === 'Called')
+    ? `<div class="row-btns"><button class="btn sm danger" onclick="cancelTicket(${t.id})">Leave the queue</button></div>` : '';
+  return `<div class="card tc ${t.status==='Called'?'turn':''} ${active?'':'done'}">
+    <div class="no"><small>No.</small>${t.number}</div>
+    <div>
+      <h4>${esc(t.venueName)} <span class="chip ${t.status==='Called'||t.status==='Serving'?'ok':t.status==='NoShow'?'bad':''}">${esc(t.status)}</span></h4>
+      <div class="meta">Now serving ${t.nowServing ? '#'+t.nowServing : '-'} &middot; joined ${fmtTime(t.joinedAt)}</div>
+      <div style="margin-top:10px">${info}</div>
+      ${t.status==='Waiting' ? `<div class="prog"><i style="width:${pct}%"></i></div>` : ''}
+      ${cancel}
+    </div></div>`;
+}
+
+function renderTickets(){
+  const act = S.tickets.filter(t => ['Waiting','Called','Serving'].includes(t.status));
+  const old = S.tickets.filter(t => !['Waiting','Called','Serving'].includes(t.status));
+  $('#panel').innerHTML = `
+    ${act.length ? `<div class="grid">${act.map(ticketCard).join('')}</div>`
+      : `<div class="empty">You have no active tickets.<br><br><button class="btn primary" onclick="setTab('venues')">Find a queue</button></div>`}
+    ${old.length ? `<h3 style="margin:30px 0 12px">Earlier today</h3><div class="grid">${old.map(ticketCard).join('')}</div>` : ''}
+    <p class="hint">You can hold up to 2 active tickets at once. Tickets reset every night.</p>`;
+  tickCountdown();
+}
+
+async function cancelTicket(id){
+  try{ await post(`/api/tickets/${id}/cancel`); toast('You left the queue.'); await loadTickets(false); }
+  catch(e){ toast(e.message, 'err'); }
+}
+
+function tickCountdown(){
+  document.querySelectorAll('.cd[data-deadline]').forEach(el => {
+    const ms = new Date(el.dataset.deadline) - Date.now();
+    if(ms <= 0){ el.textContent = '(time is up)'; return; }
+    const s = Math.floor(ms/1000);
+    el.textContent = `(${Math.floor(s/60)}:${String(s%60).padStart(2,'0')} left)`;
+  });
+}
+setInterval(tickCountdown, 1000);
+
+function updateTitle(){
+  const turn = S.tickets.some(t => t.status === 'Called');
+  document.title = turn ? 'Your turn! - Dor' : 'Dor - your place in line';
+}
+
+/* ---------- staff console ---------- */
+async function loadStaff(showLoading){
+  if(showLoading) $('#panel').innerHTML = '<div class="empty">Loading your venues...</div>';
+  S.staffVenues = await api('/api/venues/mine');
+  if(S.staffVenues.length === 0){
+    S.staffQueue = null;
+    $('#panel').innerHTML = `<div class="empty">You don't run any venue yet.<br><br>
+      <button class="btn primary" onclick="openVenueForm()">Create your first venue</button></div>`;
+    watch([]); return;
+  }
+  if(!S.staffVenues.some(v => v.id === S.staffVenueId)) S.staffVenueId = S.staffVenues[0].id;
+  S.staffQueue = await api(`/api/venues/${S.staffVenueId}/queue`);
+  if(S.tab === 'console') renderStaff();
+  watch([S.staffVenueId]);
+}
+
+function renderStaff(){
+  const q = S.staffQueue, v = q.venue, c = q.current;
+  const opts = S.staffVenues.map(x => `<option value="${x.id}" ${x.id===v.id?'selected':''}>${esc(x.name)}</option>`).join('');
+  let counter;
+  if(!c){
+    counter = `<div class="no none">Counter free</div>
+      <div class="row-btns"><button class="btn primary" onclick="callNext()" ${q.waiting.length?'':'disabled'}>Call next</button></div>
+      <p class="hint">${q.waiting.length ? q.waiting.length + ' waiting' : 'Nobody is waiting.'}</p>`;
+  }else if(c.status === 'Called'){
+    counter = `<span class="chip warn">Called - waiting for the customer</span>
+      <div class="no">#${c.number}</div><h4>${esc(c.customerName)}</h4><div class="meta">${esc(c.customerPhone)}</div>
+      <div class="row-btns"><button class="btn primary" onclick="move(${c.ticketId},'start')">Customer arrived</button>
+      <button class="btn warn" onclick="move(${c.ticketId},'no-show')">No-show</button></div>
+      <p class="hint">If they do not arrive within ${v.callGraceMinutes} min the system releases the ticket by itself.</p>`;
+  }else{
+    counter = `<span class="chip ok">Serving</span>
+      <div class="no">#${c.number}</div><h4>${esc(c.customerName)}</h4><div class="meta">${esc(c.customerPhone)}</div>
+      <div class="row-btns"><button class="btn primary" onclick="move(${c.ticketId},'complete')">Done</button></div>`;
+  }
+  const list = q.waiting.map(w => `<div class="wl"><span class="n">#${w.number}</span>
+      <span style="flex:1">${esc(w.customerName)}<div class="meta">${esc(w.customerPhone)} &middot; since ${fmtTime(w.joinedAt)}</div></span></div>`).join('');
+
+  $('#panel').innerHTML = `
+    <div class="bar">
+      <select onchange="pickVenue(this.value)">${opts}</select>
+      <button class="btn sm ${v.isOpen?'warn':'primary'}" onclick="toggleOpen(${v.id}, ${!v.isOpen})">${v.isOpen?'Close the queue':'Open the queue'}</button>
+      <button class="btn sm" onclick="openVenueForm()">+ New venue</button>
+      <span class="chip ${v.isOpen?'ok':'bad'}">${v.isOpen?'Open':'Closed'}</span>
+    </div>
+    <div class="console">
+      <div class="card counter">${counter}
+        <div class="summary">
+          <div><b>${q.servedToday}</b><small>Served</small></div>
+          <div><b>${q.noShowsToday}</b><small>No-shows</small></div>
+          <div><b>${q.cancelledToday}</b><small>Left</small></div>
+          <div><b>${v.avgServiceMinutes}m</b><small>Avg service</small></div>
+        </div>
+      </div>
+      <div class="card"><h3 style="margin-bottom:6px">Waiting (${q.waiting.length})</h3>
+        <p class="hint" style="margin:0 0 8px">Customer details are visible to you only.</p>
+        ${list || '<div class="empty" style="margin-top:10px">The line is empty.</div>'}</div>
+    </div>`;
+}
+function pickVenue(id){ S.staffVenueId = Number(id); loadStaff(false); }
+async function callNext(){
+  try{ const e = await post(`/api/venues/${S.staffVenueId}/call-next`); toast(`Called #${e.number}: ${e.customerName}`); await loadStaff(false); }
+  catch(e){ toast(e.message, 'err'); }
+}
+async function move(id, action){
+  try{ await post(`/api/tickets/${id}/${action}`); await loadStaff(false); }
+  catch(e){ toast(e.message, 'err'); }
+}
+async function toggleOpen(id, open){
+  try{ await post(`/api/venues/${id}/${open?'open':'close'}`); await loadStaff(false); }
+  catch(e){ toast(e.message, 'err'); }
+}
+
+/* ====================== modals ====================== */
+function closeModal(){ $('#modalRoot').innerHTML = ''; }
+function modal(html){
+  $('#modalRoot').innerHTML = `<div class="modal" onclick="if(event.target===this)closeModal()"><div class="box">
+    <button class="x" onclick="closeModal()" aria-label="Close">&times;</button>${html}</div></div>`;
+}
+
+let authMode = 'login';
+function openAuth(mode){
+  authMode = mode || 'login';
+  const reg = authMode === 'register';
+  modal(`
+    <h3>${reg ? 'Create your account' : 'Welcome back'}</h3>
+    <div class="tabs2"><button class="${!reg?'on':''}" onclick="openAuth('login')">Sign in</button>
+      <button class="${reg?'on':''}" onclick="openAuth('register')">Create account</button></div>
+    <form id="authForm" onsubmit="submitAuth(event)" class="form">
+      ${reg ? `<div class="full"><label>Full name</label><input id="aName" required minlength="2" maxlength="100"></div>
+               <div class="full"><label>Phone</label><input id="aPhone" required placeholder="+20 10 0000 0000"></div>` : ''}
+      <div class="full"><label>Email</label><input id="aEmail" type="email" required></div>
+      <div class="full"><label>Password</label><input id="aPass" type="password" required minlength="${reg?8:1}"></div>
+      ${reg ? `<div class="full"><label>I am...</label><select id="aRole">
+                 <option value="Customer">a customer (I want to join queues)</option>
+                 <option value="Staff">venue staff (I run a queue)</option></select></div>` : ''}
+      <div class="full"><button class="btn primary" style="width:100%" id="authBtn">${reg?'Create account':'Sign in'}</button></div>
+    </form>
+    ${reg ? '' : `<div class="demo">
+      <button onclick="fillDemo('cust1@demo.dor')">Demo customer</button>
+      <button onclick="fillDemo('staff1@demo.dor')">Demo staff</button></div>
+      <p class="hint">Demo password: Demo@12345</p>`}`);
+}
+function fillDemo(email){ $('#aEmail').value = email; $('#aPass').value = 'Demo@12345'; }
+
+async function submitAuth(ev){
+  ev.preventDefault();
+  const btn = $('#authBtn'); btn.disabled = true;
+  try{
+    const reg = authMode === 'register';
+    const body = {email: $('#aEmail').value, password: $('#aPass').value};
+    if(reg){ body.fullName = $('#aName').value; body.phone = $('#aPhone').value; body.role = $('#aRole').value; }
+    const r = await post(reg ? '/api/auth/register' : '/api/auth/login', body);
+    S.token = r.token; S.user = r.user; saveSession();
+    closeModal(); renderNav(); startRealtime();
+    toast(`Welcome, ${S.user.fullName}!`);
+    openApp();
+  }catch(e){ toast(e.message, 'err'); btn.disabled = false; }
+}
+
+function signOut(silent){
+  S.token = null; S.user = null; S.tickets = []; S.staffQueue = null;
+  try{ localStorage.removeItem('dor.session'); }catch{}
+  renderNav(); startRealtime(); updateTitle();
+  if(!silent) toast('Signed out.');
+  goHome();
+}
+
+function openVenueForm(){
+  modal(`<h3>New venue</h3>
+    <form class="form" onsubmit="submitVenue(event)">
+      <div class="full"><label>Name</label><input id="vName" required minlength="2" maxlength="120"></div>
+      <div><label>Category</label><select id="vCat">${CATS.map(c=>`<option>${c}</option>`).join('')}</select></div>
+      <div><label>City</label><input id="vCity" required value="Cairo"></div>
+      <div class="full"><label>Address</label><input id="vAddr" required minlength="2" maxlength="200"></div>
+      <div><label>Typical minutes per customer</label><input id="vMin" type="number" min="1" max="120" value="8"></div>
+      <div><label>Max people in queue</label><input id="vMax" type="number" min="1" max="500" value="50"></div>
+      <div class="full"><label>Minutes a called customer has to arrive</label><input id="vGrace" type="number" min="1" max="30" value="3"></div>
+      <div class="full"><button class="btn primary" style="width:100%">Create venue</button></div>
+    </form>`);
+}
+async function submitVenue(ev){
+  ev.preventDefault();
+  try{
+    const v = await post('/api/venues', {
+      name: $('#vName').value, category: $('#vCat').value, city: $('#vCity').value, address: $('#vAddr').value,
+      defaultServiceMinutes: Number($('#vMin').value), maxQueueSize: Number($('#vMax').value),
+      callGraceMinutes: Number($('#vGrace').value)
+    });
+    S.staffVenueId = v.id; closeModal(); toast('Venue created.'); await loadStaff(false);
+  }catch(e){ toast(e.message, 'err'); }
+}
+
+/* ====================== real time (SignalR) ====================== */
+let conn = null, liveOn = false, watched = new Set();
+
+function setLive(on){
+  liveOn = on;
+  const tag = $('#liveTag');
+  if(tag){ tag.className = 'live ' + (on?'on':''); tag.lastElementChild.textContent = on ? 'Live' : 'Updating every few seconds'; }
+}
+
+function loadScript(urls){
+  return new Promise(resolve => {
+    const next = () => {
+      const u = urls.shift(); if(!u) return resolve(false);
+      const s = document.createElement('script'); s.src = u;
+      s.onload = () => resolve(true); s.onerror = next; document.head.appendChild(s);
+    };
+    next();
+  });
+}
+
+async function startRealtime(){
+  if(!window.signalR){
+    const ok = await loadScript([
+      'https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js',
+      'https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.7/dist/browser/signalr.min.js'
+    ]);
+    if(!ok){ setLive(false); return; }
+  }
+  if(conn){ try{ await conn.stop(); }catch{} }
+  conn = new signalR.HubConnectionBuilder()
+    .withUrl('/hubs/queue', {accessTokenFactory: () => S.token || ''})
+    .withAutomaticReconnect().build();
+
+  conn.on('QueueChanged', () => scheduleRefresh());
+  conn.on('Notification', onNotification);
+  conn.onreconnecting(() => setLive(false));
+  conn.onreconnected(() => { resubscribe(); setLive(true); scheduleRefresh(); });
+  conn.onclose(() => setLive(false));
+
+  try{ await conn.start(); resubscribe(); setLive(true); }catch{ setLive(false); }
+}
+
+function connected(){ return conn && conn.state === signalR.HubConnectionState.Connected; }
+function resubscribe(){ if(connected()) watched.forEach(id => conn.invoke('SubscribeVenue', id).catch(() => {})); }
+
+// Tell the server which venues this page is watching (and stop watching the others).
+function watch(ids){
+  const want = new Set(ids);
+  if(connected()){
+    want.forEach(id => { if(!watched.has(id)) conn.invoke('SubscribeVenue', id).catch(() => {}); });
+    watched.forEach(id => { if(!want.has(id)) conn.invoke('UnsubscribeVenue', id).catch(() => {}); });
+  }
+  watched = want;
+}
+
+function onNotification(n){
+  const turn = n.type === 'YourTurn';
+  toast(n.message, turn ? 'turn' : (n.type === 'NoShow' ? 'err' : ''));
+  if(turn || n.type === 'AlmostYourTurn') beep();
+  if('Notification' in window && Notification.permission === 'granted'){
+    try{ new Notification('Dor', {body: n.message}); }catch{}
+  }
+  scheduleRefresh();
+  if(isCustomer()) api('/api/tickets/mine').then(t => { S.tickets = t; updateTitle(); }).catch(() => {});
+}
+
+function askNotificationPermission(){
+  try{ if('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); }catch{}
+}
+
+// Safety net: even if the live connection drops, the screen refreshes on its own.
+setInterval(() => { if(!liveOn) refreshCurrent(false); }, 8000);
+setInterval(() => refreshCurrent(false), 45000);
+
+/* ====================== start ====================== */
+const io = new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting) e.target.classList.add('in'); }), {threshold:.15});
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+loadSession();
+renderNav();
+loadStats();
+startRealtime();
+</script>
+</body>
+</html>
