@@ -14,6 +14,26 @@ Clinics, government offices, banks and pharmacies in Egypt run on physical queue
 - **Staff** open a queue, call the next customer, mark arrival, completion or no-show, and see the day's numbers.
 - **The system** learns how long people really take at each counter and uses that to estimate the wait.
 
+## Screenshots
+
+**Landing page**
+
+![Dor landing page](docs/screenshots/01-landing.png)
+
+**Customer: live queues with wait estimates**
+
+![Live queues](docs/screenshots/02-queues.png)
+
+**Customer: my ticket, first waiting, then called (with a countdown)**
+
+![Ticket while waiting](docs/screenshots/03-ticket-waiting.png)
+
+![Ticket when called](docs/screenshots/04-ticket-called.png)
+
+**Staff console: call next, mark arrival / no-show, see the line and the day's numbers**
+
+![Staff console](docs/screenshots/05-staff-console.png)
+
 ## Engineering highlights
 
 | Topic | What was done |
@@ -47,9 +67,9 @@ In Development the database is created and filled with demo data automatically.
 | Role | Email |
 |---|---|
 | Customer | `cust1@demo.dor` ... `cust20@demo.dor` (cust1 and cust2 have no tickets yet) |
-| Staff | `staff1@demo.dor` ... `staff5@demo.dor` (each runs one venue) |
+| Staff | `staff1@demo.dor` ... `staff6@demo.dor` (each runs one venue; `staff1` runs Nile Family Clinic, `staff4` runs Helwan Pharmacy) |
 
-Tip: open two browser windows, one as `staff1` and one as a customer, and watch the customer's ticket update live when the staff presses "Call next".
+Tip: open two browser windows (one of them Incognito), sign in as `staff4` in one and as `cust1` in the other, take a ticket at Helwan Pharmacy as the customer, and watch it update live every time the staff presses "Call next" or "Done". Leave a called ticket untouched for 3 minutes to see the automatic no-show release.
 
 ## API
 
