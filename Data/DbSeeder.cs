@@ -93,6 +93,16 @@ public static class DbSeeder
         // 2) Today's tickets (re-created on a new day).
         var day = AppClock.Today();
 
+        // Unfinished tickets from earlier days are closed first. Otherwise they could clash with
+        // today's demo tickets: one person cannot hold two active tickets at the same venue.
+        var activeStatuses = new List<TicketStatus> { TicketStatus.Waiting, TicketStatus.Called, TicketStatus.Serving };
+        var closedAt = DateTime.UtcNow;
+        await db.Tickets
+            .Where(t => t.ServiceDate < day && activeStatuses.Contains(t.Status))
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(t => t.Status, TicketStatus.Cancelled)
+                .SetProperty(t => t.CompletedAt, (DateTime?)closedAt));
+
         var demoVenues = await db.Venues
             .Where(v => v.Owner.Email.EndsWith("@demo.dor") && v.IsOpen)
             .OrderBy(v => v.Id)
